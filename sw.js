@@ -1,6 +1,6 @@
 // MENON 手機網頁版的離線快取：第一次打開後，沒有網路也能玩。
 // 每次重新打包都會換版本號，舊快取會自動清掉。
-const CACHE = "menon-f38d67a785";
+const CACHE = "menon-1fb910ed5f";
 const CORE = ["./", "index.html", "manifest.webmanifest", "icons/icon-180.png", "icons/icon-192.png", "icons/icon-512.png", "icons/maskable-512.png", "icons/favicon-32.png"];
 
 self.addEventListener("install", (e) => {
