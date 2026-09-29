@@ -1,0 +1,142 @@
+<!doctype html>
+<html lang="zh-Hant">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="robots" content="noindex, nofollow">
+<title>MENON 數據儀表板</title>
+<link rel="icon" type="image/png" sizes="32x32" href="icons/favicon-32.png">
+<style>
+  :root { color-scheme: dark; --bg: #0e161a; --panel: #15232a; --panel2: #1b2c34; --text: #e8dcc0; --dim: #9d9278; --gold: #e0b866; --line: #d4b0622b; --good: #8fc79a; --bad: #e88a7a; --sim: #7fb6d6; }
+  * { box-sizing: border-box; }
+  body { margin: 0; background: var(--bg); color: var(--text); font: 15px/1.55 system-ui, "Noto Sans TC", sans-serif; }
+  main { max-width: 1100px; margin: 0 auto; padding: 24px 16px 60px; }
+  h1 { font: 700 1.5rem/1.2 "Noto Serif TC", Georgia, serif; color: var(--gold); margin: 0 0 4px; letter-spacing: .04em; }
+  h2 { font: 700 1.05rem/1.3 "Noto Serif TC", Georgia, serif; color: var(--gold); margin: 0 0 10px; }
+  .sub { color: var(--dim); font-size: .88rem; }
+  .bar-controls { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; margin: 16px 0; }
+  input, select, button { font: inherit; color: var(--text); background: var(--panel2); border: 1px solid var(--line); border-radius: 8px; padding: 7px 10px; }
+  button { cursor: pointer; background: #3a2e17; border-color: #d4b06266; color: #f5e7c4; }
+  button:hover { filter: brightness(1.15); }
+  .tiles { display: grid; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); gap: 10px; margin-bottom: 14px; }
+  .tile { background: var(--panel); border: 1px solid var(--line); border-radius: 12px; padding: 12px 14px; }
+  .tile b { display: block; font: 700 1.6rem/1.1 Georgia, serif; color: var(--gold); font-variant-numeric: tabular-nums; }
+  .tile span { color: var(--dim); font-size: .82rem; }
+  .grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(330px, 1fr)); gap: 14px; }
+  section { background: var(--panel); border: 1px solid var(--line); border-radius: 14px; padding: 14px 14px 10px; overflow-x: auto; }
+  table { width: 100%; border-collapse: collapse; font-size: .86rem; font-variant-numeric: tabular-nums; }
+  th, td { text-align: left; padding: 5px 6px; border-bottom: 1px solid var(--line); white-space: nowrap; }
+  th { color: var(--dim); font-weight: 600; font-size: .78rem; cursor: pointer; user-select: none; }
+  td.n { text-align: right; }
+  .bar { position: relative; height: 10px; min-width: 90px; background: #0008; border-radius: 5px; overflow: hidden; }
+  .bar i { position: absolute; left: 0; top: 0; bottom: 0; background: var(--gold); border-radius: 5px; }
+  .bar u { position: absolute; top: -2px; bottom: -2px; width: 2px; background: var(--sim); }
+  .bar em { position: absolute; top: 0; bottom: 0; left: 45%; width: 10%; background: #8fc79a22; }
+  .low { color: var(--bad); } .high { color: var(--good); } .few { opacity: .5; }
+  .legend { display: flex; gap: 14px; flex-wrap: wrap; font-size: .78rem; color: var(--dim); margin: 0 0 12px; }
+  .legend span::before { content: ""; display: inline-block; width: 10px; height: 10px; border-radius: 2px; margin-right: 5px; vertical-align: -1px; background: var(--c); }
+  .hist { display: flex; align-items: flex-end; gap: 4px; height: 120px; padding-top: 8px; }
+  .hist div { flex: 1; background: var(--bad); border-radius: 3px 3px 0 0; min-height: 1px; position: relative; }
+  .hist div::after { content: attr(data-l); position: absolute; bottom: -18px; left: 0; right: 0; text-align: center; font-size: .7rem; color: var(--dim); }
+  .msg { padding: 30px; text-align: center; color: var(--dim); }
+  .err { color: var(--bad); }
+  @media (max-width: 560px) { .grid { grid-template-columns: 1fr; } }
+</style>
+</head>
+<body>
+<main>
+  <h1>MENON 數據儀表板</h1>
+  <div class="sub">匿名戰鬥數據的統計。只有持有金鑰的人看得到；頁面不會把金鑰送到 Supabase 以外的地方。</div>
+  <div class="bar-controls">
+    <input id="key" type="password" placeholder="儀表板金鑰" autocomplete="off" size="28">
+    <select id="days"><option value="7">最近 7 天</option><option value="30" selected>最近 30 天</option><option value="90">最近 90 天</option><option value="3650">全部</option></select>
+    <select id="ver"><option value="">所有版本</option></select>
+    <select id="diff"><option value="normal" selected>一般難度</option><option value="easy">簡單</option><option value="hard">困難</option><option value="">全部難度</option></select>
+    <label class="sub"><input id="remember" type="checkbox"> 在這台電腦記住金鑰</label>
+    <button id="go">讀取</button>
+  </div>
+  <div class="legend"><span style="--c: var(--gold)">玩家勝率</span><span style="--c: var(--sim)">模擬勝率（v1.11）</span><span style="--c: #8fc79a55">目標 45–55%</span><span>灰色：樣本少於 20 局</span></div>
+  <div id="out"><div class="msg">輸入金鑰後按「讀取」。</div></div>
+</main>
+<script>
+const CFG = { url: "https://amzzgglrbssgeuoilcdg.supabase.co", anon: "sb_publishable_Zv9Zhroq5aauXwyD7JBLYw_baDFx9fQ" };
+const NAMES = {"ch": {"seyagales": "Seyagales", "mnes": "Mnes", "aivenna": "Aivenna", "agallos": "Agallos", "eurion": "Eurion", "vempolas": "Vempolas"}, "bless": {"athena": "雅典娜的祝福", "zeus": "宙斯的祝福", "apollo": "阿波羅的祝福", "hermes": "荷米斯的祝福", "dionysus": "戴歐尼修斯的祝福", "ares": "阿瑞斯的祝福", "prometheus": "普羅米修斯的祝福", "hades": "黑帝斯的祝福", "hephaestus": "赫菲斯托斯的祝福", "poseidon": "波賽頓的祝福", "eleos": "厄勒俄斯的祝福"}, "whisper": {"hypnos": "Hypnos 的叮嚀", "oneiroi": "Oneiroi 的叮嚀", "nyx": "Nyx 的叮嚀", "mnemosyne": "Mnemosyne 的叮嚀", "lethe": "Lethe 的叮嚀", "oizys": "Oizys 的叮嚀", "eris": "Eris 的叮嚀", "nike": "Nike 的叮嚀", "thanatos": "Thanatos 的叮嚀", "tyche": "Tyche 的叮嚀", "hestia": "Hestia 的叮嚀", "hecate": "Hecate 的叮嚀", "nemesis": "Nemesis 的叮嚀", "morpheus": "Morpheus 的叮嚀", "aidos": "Aidos 的叮嚀"}, "enemy": {"troy_scout": "特洛伊斥候", "wall_archer": "城牆弓手", "dream_hound": "夢中野犬", "bronze_shieldman": "青銅盾兵", "fog_shade": "海霧中的影子", "temple_priest": "神殿祭司", "chariot": "特洛伊戰車兵", "lion_gate": "獅子門的守衛", "hector": "赫克托耳", "achaean_deserter": "阿開亞逃兵", "oracle_echo": "神諭的回聲", "stray_lamb": "迷途的羔羊", "ilion_mourner": "伊利昂的哭喪女", "talos": "青銅巨人塔羅斯", "sirens": "岩上的歌聲", "dream_beast": "夢中之獸", "tomb_robber": "盜墓者", "bronze_bull": "青銅公牛", "ferryman": "忘川的擺渡人", "child_soldier": "少年兵", "myrmidons": "黑色的蟻群", "priestess": "神諭的女祭司", "menon_name": "米農之名", "dice_player": "擲骰的士兵", "weeping_statue": "流淚的雕像", "cyclops_shepherd": "獨眼的牧羊人"}, "card": {"bronze_spear": "青銅長矛", "hide_shield": "牛皮盾", "sling": "投石", "eagle_strike": "鷹群突擊", "brace": "站穩腳步", "bread_wine": "麵包與酒", "javelin": "標槍", "torch": "火把", "spear_thrust": "長矛突刺", "tower_shield": "塔盾", "war_cry": "戰嚎", "bronze_sword": "青銅劍", "feint": "佯攻", "watchful": "觀察", "war_banner": "軍旗", "shield_bash": "盾擊", "cretan_eagle": "克里特之鷹", "blood_cup": "血盃", "boar_helmet": "野豬牙盔", "heavy_blow": "重擊", "remember_fallen": "記得倒下的人", "rally": "重整隊伍", "shield_wall": "盾牆", "stunning_blow": "震地一擊", "blood_spear": "血祭之矛", "dream_gate": "夢之門", "aegis_echo": "神盾的回聲", "hero_charge": "英雄衝鋒", "sea_prayer": "向海祈禱", "offering": "向神獻祭", "fishing_net": "漁網", "the_name": "他們口中的名字", "bronze_wrath": "青銅之怒", "unbroken_wall": "不倒之牆", "old_wound": "舊傷", "ember_spear": "餘燼之矛", "veterans_memory": "老兵的回憶", "fleece_pad": "羊皮墊", "layered_shield": "層疊之盾", "aftertaste_wine": "回甘的酒", "grazing_ox": "反芻的牛", "retold_tale": "重述的故事", "tripwire": "絆索", "ambush": "伏兵", "mended_net": "補好的網", "raised_wall": "先築的牆", "tooth_for_tooth": "以牙還牙", "patient_spear": "等待時機", "gathering_breath": "蓄勢", "no_further": "退無可退", "rekindled": "餘燼再起", "lamb": "羔羊", "dream_shard": "夢的碎片", "beast_fang": "野獸之牙", "sea_fog": "海霧", "night_owl": "夜梟", "wave": "浪潮", "moon_tide": "月潮", "black_ship": "黑船", "fate_spear": "擲骰之矛", "oracle_cup": "神諭之杯", "fate_shield": "命運之盾", "ares_wager": "阿瑞斯的賭注", "twin_idol": "雙面神像", "prometheus_fire": "盜來的火", "pandora_jar": "潘朵拉之甕", "oar": "船槳", "horse_hide": "馬皮", "salt_wind": "鹹風", "beast_heart": "野獸之心", "lamb_heart": "羔羊之心", "warm_basin": "溫水盆", "twin_spears": "雙矛", "ios_tide": "伊奧斯的潮水", "oracle_riddle": "神諭的謎", "troy_ash": "特洛伊的灰", "chariot_wheel": "戰車輪", "veteran_lesson": "老兵的教誨", "forget_kiss": "遺忘之吻", "athena_owl": "雅典娜的貓頭鷹", "oizys_tear": "歐伊茲絲的眼淚", "oath_stone": "誓言之石", "menon_name": "米農之名", "seyagales_name": "塞亞加勒斯之名", "the_272": "二百七十二人", "let_them_go": "讓他們走", "shield_riposte": "盾後反擊", "feint_strike": "虛實", "opening_volley": "齊射", "fall_back": "退後築牆", "war_drum": "戰鼓", "turning_tide": "回潮", "m_obol": "冥河的渡資", "m_decoy": "替身", "m_shortcut": "捷徑", "m_guidestar": "指路的星", "m_ambush": "伏兵", "m_forge": "鍛爐之火", "m_lethe": "遺忘之水", "m_echo": "回聲", "m_plunder": "掠奪", "m_vow": "還願", "m_oath": "招募之誓", "m_name": "記住名字", "watch_lamp": "守夜人的燈", "olive_branch": "橄欖枝", "burn_ships": "焚船", "ash_urn": "陶罐裡的骨灰", "dice": "骰子", "two_faced_oracle": "神諭的兩面", "barefoot_run": "赤腳奔跑", "herald": "傳令兵", "eagle_dive": "鷹的俯衝", "bronze_greaves": "青銅脛甲", "wicker_shield": "柳條盾", "ship_hull": "翻過來的船身", "hoplon": "圓盾", "linen_armor": "亞麻甲", "trench": "壕溝", "phalanx": "方陣", "troy_walls": "特洛伊的城牆", "mourning_veil": "哭喪的面紗", "last_line": "最後一道防線", "polished_shield": "磨亮的盾", "ship_planks": "拆下的船板", "short_sword": "短劍", "bowshot": "連射", "hoplite_thrust": "重裝突刺", "spear_rain": "矛雨", "night_raid": "夜襲", "heel_strike": "腳踝", "mercy_strike": "不殺之擊", "labrys": "雙面斧", "wooden_horse": "木馬", "hector_spear": "赫克托的矛", "blood_price": "血價", "gambler_throw": "賭徒的一擲", "oil_lamp": "油燈", "deep_breath": "深呼吸", "muse_song": "繆思之歌", "ambrosia": "神饌", "winged_sandals": "飛鞋", "lyre": "里拉琴", "hubris": "傲慢", "kleos": "榮光", "momus_mask": "莫摩斯的面具", "r_scout": "斥候的眼睛", "r_archer": "城牆上的弓", "r_hound": "跟著你的野犬", "r_shieldman": "刻著鷹的盾", "r_shade": "霧中的名字", "r_priest": "祭司的禱詞", "r_deserter": "逃兵的劍", "r_echo": "神諭的回聲", "r_mourner": "哭喪女的歌", "r_chariot": "空的戰車", "r_liongate": "獅子門的石頭", "r_talos": "塔羅斯的青銅", "r_sirens": "岩上的歌", "r_hector": "赫克托耳的矛", "r_beast": "野獸的心跳", "r_robber": "盜墓者的鏟", "r_bull": "公牛的角", "r_ferryman": "渡船的槳", "r_child": "少年的彈弓", "r_myrmidons": "蟻群的盾陣", "r_priestess": "女祭司的三腳鼎", "r_name": "你的名字", "r_dice": "士兵的骰子", "r_statue": "石頭的眼淚", "r_cyclops": "牧羊人的棍子", "ares_a1": "生鏽的矛頭", "ares_a2": "染血的矛", "ares_a3": "阿瑞斯的矛", "ares_a4": "屠城之矛", "ares_b1": "破盾", "ares_b2": "血盾", "ares_b3": "戰神之盾", "ares_b4": "屍山之盾", "dream_blade": "夢刃", "dream_veil": "夢紗", "dream_wine": "夢中的酒", "echo_eagle": "鷹的回聲", "old_oath": "舊誓言", "sleep_dust": "睡意", "curse_forget": "遺忘", "curse_lead": "沉重", "curse_dread": "恐懼"}, "star": {"bronze_spear": 1, "hide_shield": 1, "sling": 1, "eagle_strike": 1, "brace": 1, "bread_wine": 1, "javelin": 1, "torch": 1, "spear_thrust": 2, "tower_shield": 2, "war_cry": 2, "bronze_sword": 2, "feint": 2, "watchful": 2, "war_banner": 2, "shield_bash": 2, "cretan_eagle": 2, "blood_cup": 2, "boar_helmet": 3, "heavy_blow": 3, "remember_fallen": 3, "rally": 3, "shield_wall": 3, "stunning_blow": 3, "blood_spear": 3, "dream_gate": 3, "aegis_echo": 4, "hero_charge": 4, "sea_prayer": 4, "offering": 4, "fishing_net": 4, "the_name": 5, "bronze_wrath": 5, "unbroken_wall": 5, "old_wound": 1, "ember_spear": 2, "veterans_memory": 3, "fleece_pad": 1, "layered_shield": 2, "aftertaste_wine": 2, "grazing_ox": 1, "retold_tale": 3, "tripwire": 1, "ambush": 2, "mended_net": 3, "raised_wall": 1, "tooth_for_tooth": 2, "patient_spear": 2, "gathering_breath": 1, "no_further": 2, "rekindled": 3, "lamb": 1, "dream_shard": 1, "beast_fang": 2, "sea_fog": 2, "night_owl": 2, "wave": 3, "moon_tide": 3, "black_ship": 3, "fate_spear": 2, "oracle_cup": 2, "fate_shield": 2, "ares_wager": 3, "twin_idol": 3, "prometheus_fire": 4, "pandora_jar": 5, "oar": 1, "horse_hide": 1, "salt_wind": 1, "beast_heart": 2, "lamb_heart": 2, "warm_basin": 2, "twin_spears": 2, "ios_tide": 3, "oracle_riddle": 3, "troy_ash": 3, "chariot_wheel": 3, "veteran_lesson": 3, "forget_kiss": 3, "athena_owl": 4, "oizys_tear": 4, "oath_stone": 4, "menon_name": 4, "seyagales_name": 4, "the_272": 5, "let_them_go": 5, "shield_riposte": 2, "feint_strike": 1, "opening_volley": 2, "fall_back": 2, "war_drum": 2, "turning_tide": 3, "m_obol": 3, "m_decoy": 2, "m_shortcut": 2, "m_guidestar": 1, "m_ambush": 2, "m_forge": 3, "m_lethe": 2, "m_echo": 2, "m_plunder": 1, "m_vow": 2, "m_oath": 2, "m_name": 1, "watch_lamp": 2, "olive_branch": 3, "burn_ships": 3, "ash_urn": 1, "dice": 1, "two_faced_oracle": 3, "barefoot_run": 1, "herald": 2, "eagle_dive": 3, "bronze_greaves": 1, "wicker_shield": 1, "ship_hull": 2, "hoplon": 2, "linen_armor": 2, "trench": 2, "phalanx": 3, "troy_walls": 4, "mourning_veil": 2, "last_line": 3, "polished_shield": 3, "ship_planks": 2, "short_sword": 1, "bowshot": 1, "hoplite_thrust": 2, "spear_rain": 3, "night_raid": 2, "heel_strike": 2, "mercy_strike": 2, "labrys": 3, "wooden_horse": 4, "hector_spear": 4, "blood_price": 3, "gambler_throw": 2, "oil_lamp": 1, "deep_breath": 1, "muse_song": 3, "ambrosia": 3, "winged_sandals": 3, "lyre": 2, "hubris": 3, "kleos": 4, "momus_mask": 3, "r_scout": 1, "r_archer": 2, "r_hound": 2, "r_shieldman": 2, "r_shade": 2, "r_priest": 2, "r_deserter": 1, "r_echo": 2, "r_mourner": 2, "r_chariot": 3, "r_liongate": 3, "r_talos": 4, "r_sirens": 3, "r_hector": 4, "r_beast": 4, "r_robber": 2, "r_bull": 3, "r_ferryman": 2, "r_child": 1, "r_myrmidons": 4, "r_priestess": 4, "r_name": 5, "r_dice": 2, "r_statue": 3, "r_cyclops": 4, "ares_a1": 1, "ares_a2": 2, "ares_a3": 3, "ares_a4": 4, "ares_b1": 1, "ares_b2": 2, "ares_b3": 3, "ares_b4": 4, "dream_blade": 1, "dream_veil": 1, "dream_wine": 1, "echo_eagle": 1, "old_oath": 1, "sleep_dust": 1, "curse_forget": 1, "curse_lead": 1, "curse_dread": 1}};
+const SIM = {"ch": {"seyagales": 52.1, "mnes": 47.6, "aivenna": 44.1, "agallos:sword": 47.9, "agallos:shield": 49.2, "eurion": 51.7, "vempolas": 46.1}, "bl": {"athena": 45.6, "zeus": 51.1, "apollo": 48.6, "hermes": 42.6, "dionysus": 45.7, "ares": 47.3, "prometheus": 54.6, "hades": 52.3, "hephaestus": 47.7}};
+const $ = (s) => document.querySelector(s);
+const esc = (x) => String(x ?? "").replace(/[&<>"]/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;" }[c]));
+const pct = (w, n) => (n ? (100 * w / n) : 0);
+const nm = (kind, id) => (NAMES[kind] && NAMES[kind][id]) || id;
+try { const k = localStorage.getItem("menon_stats_key"); if (k) { $("#key").value = k; $("#remember").checked = true; } } catch (e) {}
+function bar(p, sim) {
+  return `<div class="bar"><em></em><i style="width:${Math.max(0, Math.min(100, p))}%"></i>${sim != null ? `<u style="left:${sim}%"></u>` : ""}</div>`;
+}
+function rateCell(w, n) { const p = pct(w, n); const cls = n < 20 ? "few" : p < 45 ? "low" : p > 55 ? "high" : ""; return `<td class="n ${cls}">${n ? p.toFixed(1) + "%" : "—"}</td>`; }
+function table(id, head, rows) {
+  return `<table id="${id}"><thead><tr>${head.map((h, i) => `<th data-i="${i}">${esc(h)}</th>`).join("")}</tr></thead><tbody>${rows.join("")}</tbody></table>`;
+}
+function sortable(root) {
+  root.querySelectorAll("table").forEach((tb) => tb.querySelectorAll("th").forEach((th) => th.addEventListener("click", () => {
+    const i = +th.dataset.i, body = tb.tBodies[0], rs = [...body.rows], asc = th.dataset.asc !== "1";
+    const v = (r) => { const t = r.cells[i].textContent.replace(/[%,]/g, ""); const n = parseFloat(t); return isNaN(n) ? t : n; };
+    rs.sort((a, b) => (v(a) > v(b) ? 1 : v(a) < v(b) ? -1 : 0) * (asc ? 1 : -1)); rs.forEach((r) => body.appendChild(r));
+    tb.querySelectorAll("th").forEach((x) => delete x.dataset.asc); th.dataset.asc = asc ? "1" : "0";
+  })));
+}
+async function load() {
+  const key = $("#key").value.trim(), out = $("#out");
+  if (!key) { out.innerHTML = `<div class="msg err">請輸入金鑰。</div>`; return; }
+  try { if ($("#remember").checked) localStorage.setItem("menon_stats_key", key); else localStorage.removeItem("menon_stats_key"); } catch (e) {}
+  out.innerHTML = `<div class="msg">讀取中…</div>`;
+  let d;
+  try {
+    const res = await fetch(CFG.url + "/rest/v1/rpc/menon_stats", { method: "POST", headers: { apikey: CFG.anon, "Content-Type": "application/json" },
+      body: JSON.stringify({ p_key: key, p_days: +$("#days").value, p_ver: $("#ver").value || null }) });
+    if (!res.ok) { out.innerHTML = `<div class="msg err">讀取失敗（${res.status}）。金鑰可能不對，或還沒在 Supabase 執行 telemetry_setup.sql。</div>`; return; }
+    d = await res.json();
+  } catch (e) { out.innerHTML = `<div class="msg err">連不上伺服器：${esc(e.message)}</div>`; return; }
+  render(d);
+}
+function render(d) {
+  const diff = $("#diff").value, fd = (x) => !diff || x.diff === diff;
+  const vs = $("#ver"), cur = vs.value;
+  vs.innerHTML = `<option value="">所有版本</option>` + Object.entries(d.versions || {}).sort().reverse().map(([v, n]) => `<option value="${esc(v)}"${v === cur ? " selected" : ""}>v${esc(v)}（${n} 局）</option>`).join("");
+  const T = d.totals || {};
+  let h = `<div class="tiles">
+    <div class="tile"><b>${T.runs || 0}</b><span>局數</span></div>
+    <div class="tile"><b>${T.runs ? pct(T.wins, T.runs).toFixed(1) : 0}%</b><span>整體勝率（所有難度）</span></div>
+    <div class="tile"><b>${d.battles_total || 0}</b><span>戰鬥場數</span></div>
+    <div class="tile"><b>${T.devices || 0}</b><span>裝置數（約等於玩家數）</span></div></div><div class="grid">`;
+  // 角色
+  const ch = {}; for (const x of (d.by_char || []).filter(fd)) { const k = x.ch + (x.stance ? ":" + x.stance : ""); const o = ch[k] || (ch[k] = { runs: 0, wins: 0, steps: 0 }); o.runs += x.runs; o.wins += x.wins; o.steps += x.steps * x.runs; }
+  h += `<section><h2>角色</h2>` + table("t-ch", ["角色", "局數", "勝率", "", "模擬", "平均步數"], Object.entries(ch).sort((a, b) => b[1].runs - a[1].runs).map(([k, o]) => {
+    const s = diff === "normal" ? SIM.ch[k] : null, [c, st] = k.split(":");
+    return `<tr><td>${esc(nm("ch", c))}${st ? "・" + (st === "sword" ? "劍" : "盾") : ""}</td><td class="n">${o.runs}</td>${rateCell(o.wins, o.runs)}<td>${bar(pct(o.wins, o.runs), s)}</td><td class="n">${s != null ? s + "%" : "—"}</td><td class="n">${(o.steps / o.runs).toFixed(1)}</td></tr>`; })) + `</section>`;
+  // 祝福
+  const bl = {}; for (const x of (d.by_bless || []).filter(fd)) { const o = bl[x.bless] || (bl[x.bless] = { runs: 0, wins: 0 }); o.runs += x.runs; o.wins += x.wins; }
+  h += `<section><h2>主神的祝福</h2>` + table("t-bl", ["祝福", "局數", "勝率", "", "模擬"], Object.entries(bl).sort((a, b) => b[1].runs - a[1].runs).map(([k, o]) => {
+    const s = diff === "normal" ? SIM.bl[k] : null;
+    return `<tr><td>${esc(nm("bless", k))}</td><td class="n">${o.runs}</td>${rateCell(o.wins, o.runs)}<td>${bar(pct(o.wins, o.runs), s)}</td><td class="n">${s != null ? s + "%" : "—"}</td></tr>`; })) + `</section>`;
+  // 死在第幾步
+  const ds = d.death_step || {}, mx = Math.max(1, ...Object.values(ds));
+  h += `<section><h2>輸掉的局：死在第幾步</h2><div class="hist">${Array.from({ length: 13 }, (_, i) => `<div data-l="${i}" style="height:${100 * (ds[i] || 0) / mx}%" title="第 ${i} 步：${ds[i] || 0} 局"></div>`).join("")}</div><div style="height:22px"></div>
+    <div class="sub">結果：${Object.entries(d.by_result || {}).map(([k, v]) => `${esc({ lost: "輸", win_kill: "擊敗 Boss", win_spare: "放過 Boss" }[k] || k)} ${v}`).join("｜")}</div></section>`;
+  // 叮嚀
+  h += `<section><h2>神的叮嚀</h2>` + table("t-wh", ["叮嚀", "持有局數", "勝率", ""], (d.whispers || []).sort((a, b) => b.runs - a.runs).map((x) =>
+    `<tr><td>${esc(nm("whisper", x.whisper))}</td><td class="n">${x.runs}</td>${rateCell(x.wins, x.runs)}<td>${bar(pct(x.wins, x.runs))}</td></tr>`)) + `</section>`;
+  h += `</div><div class="grid" style="margin-top:14px">`;
+  // 敵人
+  h += `<section><h2>敵人（依擊敗玩家的比例排序）</h2>` + table("t-en", ["敵人", "種類", "場數", "擊敗玩家", "被放過", "平均失血", "平均回合"], (d.by_enemy || []).sort((a, b) => b.deaths / b.fights - a.deaths / a.fights).map((x) =>
+    `<tr class="${x.fights < 20 ? "few" : ""}"><td>${esc(nm("enemy", x.enemy))}</td><td>${esc({ normal: "一般", elite: "菁英", boss: "Boss" }[x.kind] || x.kind)}</td><td class="n">${x.fights}</td><td class="n">${pct(x.deaths, x.fights).toFixed(1)}%</td><td class="n">${pct(x.spared, x.fights).toFixed(1)}%</td><td class="n">${x.hp_lost}</td><td class="n">${x.turns}</td></tr>`)) + `</section>`;
+  // 卡牌
+  const played = d.cards_played || {};
+  h += `<section><h2>卡牌（在最後牌組裡的局數與勝率）</h2>` + table("t-cd", ["牌", "星", "局數", "勝率", "被打出"], (d.cards_deck || []).sort((a, b) => b.runs - a.runs).map((x) =>
+    `<tr class="${x.runs < 20 ? "few" : ""}"><td>${esc(nm("card", x.card))}</td><td class="n">${(NAMES.star || {})[x.card] || ""}</td><td class="n">${x.runs}</td>${rateCell(x.wins, x.runs)}<td class="n">${played[x.card] || 0}</td></tr>`)) + `</section>`;
+  h += `</div><p class="sub" style="margin-top:14px">資料從 ${esc(new Date(d.since).toLocaleDateString())} 起。點表頭可以排序。勝率只在樣本夠多（約 100 局以上）時才可靠。</p>`;
+  $("#out").innerHTML = h; sortable($("#out"));
+}
+$("#go").addEventListener("click", load);
+$("#key").addEventListener("keydown", (e) => { if (e.key === "Enter") load(); });
+$("#diff").addEventListener("change", load); $("#ver").addEventListener("change", load); $("#days").addEventListener("change", load);
+</script>
+</body>
+</html>
