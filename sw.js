@@ -1,6 +1,6 @@
 // MENON 手機網頁版的離線快取：第一次打開後，沒有網路也能玩。
 // 每次重新打包都會換版本號，舊快取會自動清掉。
-const CACHE = "menon-569562bce1";
+const CACHE = "menon-7eed39c4ab";
 const CORE = ["./", "index.html", "manifest.webmanifest", "icons/icon-180.png", "icons/icon-192.png", "icons/icon-512.png", "icons/maskable-512.png", "icons/favicon-32.png"];
 
 self.addEventListener("install", (e) => {
@@ -23,6 +23,8 @@ self.addEventListener("fetch", (e) => {
     return;
   }
   if (url.origin !== location.origin) return;
+  // 音樂檔：交給瀏覽器自己處理（播放時會分段下載，不能整段放進快取）
+  if (url.pathname.includes("/music/")) return;
   // 遊戲本身：先用網路拿最新版，沒網路就用快取
   e.respondWith(fetch(req).then((r) => { const copy = r.clone(); caches.open(CACHE).then((c) => c.put(req, copy)); return r; })
     .catch(() => caches.match(req).then((hit) => hit || caches.match("index.html"))));
