@@ -1,0 +1,14 @@
+{
+  "appId": "io.github.tg4424.menon",
+  "appName": "MENON",
+  "webDir": "www",
+  "backgroundColor": "#16120e",
+  "plugins": {
+    "SplashScreen": {
+      "launchShowDuration": 2000,
+      "launchAutoHide": true,
+      "backgroundColor": "#16120e",
+      "showSpinner": false
+    }
+  }
+}
