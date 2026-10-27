@@ -1,7 +1,7 @@
 {
   "name": "MENON：夢",
   "short_name": "MENON",
-  "description": "以「放過」為核心的卡牌肉鴿",
+  "description": "青銅時代的夢境卡牌肉鴿：可以擊倒，也可以放過",
   "lang": "zh-Hant",
   "start_url": "./",
   "scope": "./",
@@ -26,5 +26,43 @@
       "type": "image/png",
       "purpose": "maskable"
     }
-  ]
+  ],
+  "id": "./",
+  "categories": [
+    "games",
+    "entertainment"
+  ],
+  "screenshots": [
+    {
+      "src": "shots/shot1.webp",
+      "sizes": "786x1704",
+      "type": "image/webp",
+      "form_factor": "narrow",
+      "label": "封面"
+    },
+    {
+      "src": "shots/shot2.webp",
+      "sizes": "786x1704",
+      "type": "image/webp",
+      "form_factor": "narrow",
+      "label": "夢境地圖"
+    },
+    {
+      "src": "shots/shot3.webp",
+      "sizes": "786x1704",
+      "type": "image/webp",
+      "form_factor": "narrow",
+      "label": "戰鬥"
+    },
+    {
+      "src": "shots/shot4.webp",
+      "sizes": "1440x900",
+      "type": "image/webp",
+      "form_factor": "wide",
+      "label": "電腦版戰鬥"
+    }
+  ],
+  "launch_handler": {
+    "client_mode": "focus-existing"
+  }
 }
