@@ -6,16 +6,30 @@
 <title>MENON：夢｜刪除帳號 Delete your account</title>
 <link rel="icon" type="image/png" sizes="32x32" href="icons/favicon-32.png">
 <style>
-  :root { color-scheme: dark; --bg: #0e161a; --panel: #15232a; --text: #e8dcc0; --dim: #a89c82; --gold: #e0b866; --line: #d4b06233; }
+  :root { color-scheme: dark; --bg: #0e161a; --panel: #15232a; --text: #e8dcc0; --dim: #a89c82; --gold: #e0b866; --line: #d4b06233; --bad: #e88a7a; --ok: #9cd39a; }
   * { box-sizing: border-box; }
   body { margin: 0; background: var(--bg); color: var(--text); font: 16px/1.75 "Noto Serif TC", "Songti TC", Georgia, serif; }
-  main { max-width: 760px; margin: 0 auto; padding: 32px 18px 64px; }
+  main { max-width: 760px; margin: 0 auto; padding: 32px 16px 64px; }
   h1 { font-size: 1.6rem; color: var(--gold); margin: 0 0 4px; }
   h2 { font-size: 1.15rem; color: var(--gold); margin: 26px 0 6px; }
   a { color: var(--gold); }
   section { background: var(--panel); border: 1px solid var(--line); border-radius: 14px; padding: 6px 20px 18px; margin-top: 22px; }
   ol, ul { padding-left: 1.3em; }
   .meta { color: var(--dim); font-size: .9rem; }
+  .en { color: var(--dim); font-size: .92rem; }
+  form { margin: 12px 0 4px; }
+  label { display: block; font-size: .95rem; margin: 10px 0 4px; }
+  input { width: 100%; font: inherit; color: var(--text); background: var(--bg); border: 1px solid var(--line); border-radius: 10px; padding: 10px 12px; }
+  input:focus { outline: 2px solid var(--gold); outline-offset: 1px; }
+  .row { display: flex; flex-wrap: wrap; gap: 10px; margin-top: 12px; }
+  button { font: inherit; border-radius: 10px; padding: 9px 18px; cursor: pointer; border: 1px solid var(--gold); background: var(--gold); color: #1b1408; }
+  button.ghost { background: transparent; color: var(--gold); }
+  button.danger { background: #b5503f; border-color: #b5503f; color: #fff; }
+  button:disabled { opacity: .5; cursor: default; }
+  .msg { min-height: 1.5em; margin: 10px 0 0; font-size: .95rem; }
+  .msg.bad { color: var(--bad); }
+  .msg.ok { color: var(--ok); }
+  [hidden] { display: none !important; }
 </style>
 </head>
 <body>
@@ -24,44 +38,135 @@
   <div class="meta">Delete your MENON account · <a href="privacy.html">隱私權政策 Privacy Policy</a></div>
 
   <section>
-    <h2>在遊戲裡刪除（最快）</h2>
+    <h2>方法一：在遊戲裡刪除</h2>
+    <p class="en">Option 1: Delete in the game</p>
     <ol>
-      <li>打開 MENON，進入「設定」。</li>
-      <li>找到「雲端存檔」，確認已經登入要刪除的帳號。</li>
-      <li>按「刪除帳號」，再按一次確認。</li>
+      <li>打開 MENON，進入「設定」。<span class="en">Open MENON and go to Settings.</span></li>
+      <li>在「雲端存檔」確認已經登入要刪除的帳號。<span class="en">Under Cloud Save, make sure you are signed in to the account you want to delete.</span></li>
+      <li>按「刪除帳號」，再按一次確認。<span class="en">Tap “Delete account”, then tap again to confirm.</span></li>
     </ol>
-    <p>登入帳號（Email、帳號識別碼）與雲端存檔會立即永久刪除，無法復原。這台裝置上的進度不會被刪除。</p>
-
-    <h2>沒有辦法打開遊戲時</h2>
-    <p>請在 <a href="https://github.com/tg4424/menon/issues">GitHub Issues</a> 留言「刪除帳號」，並寫下你登入用的 Email（也可以只寫 Email 的前幾個字，我們會再私下確認）。我們會在 30 天內刪除帳號與雲端存檔，並回覆你。</p>
-
-    <h2>會刪除什麼</h2>
-    <ul>
-      <li>刪除：Email、帳號識別碼、雲端存檔（收藏、星圖、成就、紀錄等）。</li>
-      <li>不保留任何資料；雲端服務的系統備份可能在短時間內仍含有舊資料，之後會自動覆蓋。</li>
-      <li>只想刪除雲端存檔、保留帳號：設定 → 雲端存檔 → 刪除雲端存檔。</li>
-    </ul>
   </section>
 
-  <section lang="en">
-    <h2>Delete in the game (fastest)</h2>
-    <ol>
-      <li>Open MENON and go to Settings.</li>
-      <li>Under Cloud Save, make sure you are signed in to the account you want to delete.</li>
-      <li>Tap “Delete account”, then tap again to confirm.</li>
-    </ol>
-    <p>Your sign-in (email and account ID) and your cloud save are permanently deleted immediately. This can't be undone. Progress stored on the device itself is not deleted.</p>
+  <section>
+    <h2>方法二：在這個網頁刪除</h2>
+    <p class="en">Option 2: Delete on this page</p>
+    <p>不用打開遊戲，也不用公開任何資料。輸入你登入用的 Email，我們會寄一組驗證碼給你，確認是你本人後就能立即刪除。<br>
+      <span class="en">You don't need the game, and nothing is posted publicly. Enter the email you sign in with. We'll send you a code to confirm it's you, then you can delete your account right away.</span></p>
 
-    <h2>If you can't open the game</h2>
-    <p>Open an issue on <a href="https://github.com/tg4424/menon/issues">GitHub Issues</a> titled “Delete account” with the email you signed in with (or just its first few characters; we will confirm privately). We delete the account and cloud save within 30 days and reply to you.</p>
+    <form id="f-email" autocomplete="on">
+      <label for="email">Email</label>
+      <input id="email" type="email" inputmode="email" autocomplete="email" required placeholder="you@example.com">
+      <div class="row"><button id="send" type="submit">寄驗證碼 Send code</button></div>
+    </form>
 
-    <h2>What is deleted</h2>
+    <form id="f-code" hidden>
+      <label for="code">信裡的驗證碼 Code from the email</label>
+      <input id="code" inputmode="numeric" autocomplete="one-time-code" maxlength="14" placeholder="12345678">
+      <div class="row">
+        <button id="verify" type="submit">確認 Confirm</button>
+        <button id="restart" class="ghost" type="button">換一個 Email Use another email</button>
+      </div>
+    </form>
+
+    <div id="f-confirm" hidden>
+      <p>已確認是 <b id="who"></b>。按下面的按鈕會<b>永久刪除</b>帳號和雲端存檔，無法復原。<br>
+        <span class="en">Confirmed. The button below <b>permanently deletes</b> your account and cloud save. This can't be undone.</span></p>
+      <div class="row">
+        <button id="delete" class="danger" type="button">永久刪除帳號 Delete my account</button>
+        <button id="cancel" class="ghost" type="button">取消 Cancel</button>
+      </div>
+    </div>
+
+    <p id="msg" class="msg" role="status" aria-live="polite"></p>
+  </section>
+
+  <section>
+    <h2>會刪除什麼</h2>
+    <p class="en">What is deleted</p>
     <ul>
-      <li>Deleted: email, account ID and cloud save (collection, star map, achievements, records, etc.).</li>
-      <li>We keep no data. System backups at our cloud provider may briefly contain old data until they are overwritten automatically.</li>
-      <li>To delete only the cloud save and keep your account: Settings → Cloud Save → Delete cloud save.</li>
+      <li>立即永久刪除：Email、帳號識別碼、雲端存檔（收藏、星圖、成就、紀錄等）、每日挑戰排行紀錄。<br>
+        <span class="en">Deleted immediately and permanently: your email, account ID, cloud save (collection, star map, achievements, records, etc.) and daily challenge scores.</span></li>
+      <li>不保留任何資料。雲端服務的系統備份可能短時間內還有舊資料，之後會自動覆蓋。<br>
+        <span class="en">We keep no data. Backups at our cloud provider may briefly contain old data until they are overwritten automatically.</span></li>
+      <li>裝置上的進度不會被刪除；刪除 App（或清除瀏覽器的網站資料）即可刪除。<br>
+        <span class="en">Progress stored on your device is not deleted. Uninstall the app (or clear the site's data in your browser) to remove it.</span></li>
+      <li>只想刪除雲端存檔、保留帳號：遊戲裡的 設定 → 雲端存檔 → 刪除雲端存檔。<br>
+        <span class="en">To delete only your cloud save and keep your account: in the game, Settings → Cloud Save → Delete cloud save.</span></li>
+      <li>匿名遊戲數據不和帳號連結；可以在 設定 → 匿名遊戲數據 → 清除我的匿名數據 刪除。<br>
+        <span class="en">Anonymous gameplay data isn't linked to your account. Delete it in Settings → Anonymous game data → Delete my anonymous data.</span></li>
     </ul>
   </section>
 </main>
+<script>
+// 和遊戲用同一個 Supabase 專案（公開金鑰，本來就在遊戲裡）。
+const API = "https://amzzgglrbssgeuoilcdg.supabase.co";
+const KEY = "sb_publishable_Zv9Zhroq5aauXwyD7JBLYw_baDFx9fQ";
+const $ = (id) => document.getElementById(id);
+let email = "", token = "";
+
+function say(text, kind) { $("msg").textContent = text; $("msg").className = "msg" + (kind ? " " + kind : ""); }
+function step(name) {
+  $("f-email").hidden = name !== "email";
+  $("f-code").hidden = name !== "code";
+  $("f-confirm").hidden = name !== "confirm";
+}
+async function call(path, body, auth) {
+  const headers = { apikey: KEY, "Content-Type": "application/json" };
+  if (auth) headers.Authorization = "Bearer " + auth;
+  try {
+    const r = await fetch(API + path, { method: "POST", headers, body: JSON.stringify(body) });
+    let json = null; try { json = await r.json(); } catch (e) {}
+    return { ok: r.ok, status: r.status, json };
+  } catch (e) { return { ok: false, status: 0, json: null }; }
+}
+function busy(btn, on) { btn.disabled = on; }
+
+$("f-email").addEventListener("submit", async (e) => {
+  e.preventDefault();
+  email = $("email").value.trim();
+  if (!email) return;
+  busy($("send"), true); say("寄送中… Sending…");
+  // create_user:false：沒有這個帳號就不會新建，也不寄信
+  const r = await call("/auth/v1/otp", { email, create_user: false });
+  busy($("send"), false);
+  if (r.status === 0) return say("連不上伺服器，請稍後再試。Can't reach the server. Please try again later.", "bad");
+  if (r.status === 429) return say("寄得太頻繁了，請過一分鐘再試。Too many requests. Please wait a minute and try again.", "bad");
+  // 不論有沒有這個帳號都顯示同一句，避免別人拿來查 Email 有沒有註冊
+  step("code"); $("code").value = ""; $("code").focus();
+  say("如果這個 Email 有 MENON 帳號，驗證碼已經寄出，一小時內有效。沒收到請看垃圾郵件匣。If this email has a MENON account, a code is on its way (valid for one hour). Check your spam folder if you don't see it.");
+});
+
+$("f-code").addEventListener("submit", async (e) => {
+  e.preventDefault();
+  const code = $("code").value.replace(/\D/g, "");
+  if (!/^\d{6,10}$/.test(code)) return say("請輸入信裡的數字驗證碼。Enter the number code from the email.", "bad");
+  busy($("verify"), true); say("確認中… Checking…");
+  const r = await call("/auth/v1/verify", { type: "email", email, token: code });
+  busy($("verify"), false);
+  if (r.status === 0) return say("連不上伺服器，請稍後再試。Can't reach the server. Please try again later.", "bad");
+  if (!r.ok || !r.json || !r.json.access_token) return say("驗證碼不對或已過期。The code is wrong or has expired.", "bad");
+  token = r.json.access_token;
+  $("who").textContent = (r.json.user && r.json.user.email) || email;
+  step("confirm"); say("");
+});
+
+$("restart").addEventListener("click", () => { token = ""; step("email"); say(""); $("email").focus(); });
+$("cancel").addEventListener("click", async () => {
+  if (token) await call("/auth/v1/logout", {}, token);
+  token = ""; step("email"); say("已取消，帳號沒有被刪除。Cancelled. Your account was not deleted.");
+});
+
+$("delete").addEventListener("click", async () => {
+  busy($("delete"), true); busy($("cancel"), true); say("刪除中… Deleting…");
+  const r = await call("/rest/v1/rpc/menon_delete_account", {}, token);
+  if (r.ok) {
+    token = ""; $("f-confirm").hidden = true;
+    return say("帳號和雲端存檔已經永久刪除。Your account and cloud save have been permanently deleted.", "ok");
+  }
+  busy($("delete"), false); busy($("cancel"), false);
+  say(r.status === 0 ? "連不上伺服器，請稍後再試。Can't reach the server. Please try again later."
+    : "刪除失敗，請重新寄一次驗證碼再試。Deletion failed. Please request a new code and try again.", "bad");
+});
+</script>
 </body>
 </html>
