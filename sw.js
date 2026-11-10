@@ -1,7 +1,7 @@
 // MENON 手機網頁版的離線快取：第一次打開後，沒有網路也能玩。
 // 外殼（index.html 等）每個版本一份快取；遊戲程式與各語言資料檔名帶雜湊，放在 menon-assets（內容沒變就一直用）；
 // 圖片另外放一份長期快取（網址帶雜湊，圖沒變就不重新下載）。
-const CACHE = "menon-9076882768";
+const CACHE = "menon-1cbc6dacab";
 const IMG_CACHE = "menon-img";
 const ASSET_CACHE = "menon-assets";
 const APP = ["app.c405a8da38.js", "app.cc018b5355.css"];
