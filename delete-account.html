@@ -2,6 +2,9 @@
 <html lang="zh-Hant">
 <head>
 <meta charset="utf-8">
+<!-- CSP 的雜湊與網址由 build/build.js 建置時填入（@@…@@），改了頁面裡的程式或樣式不用手動重算 -->
+<meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'sha256-+EHupBc4PDYVuDkcjxVcvi2urD322sjzoehdkpwzX/Q='; style-src 'sha256-IWGYzl3icSrWpyLlYWUQ1rIHOFCuGdA1ug1iunfkRyY='; img-src 'self'; connect-src https://amzzgglrbssgeuoilcdg.supabase.co; base-uri 'none'; form-action 'none'; object-src 'none'">
+<meta name="referrer" content="no-referrer">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>MENON：夢｜刪除帳號 Delete your account</title>
 <link rel="icon" type="image/png" sizes="32x32" href="icons/favicon-32.png">
@@ -56,6 +59,7 @@
     <form id="f-email" autocomplete="on">
       <label for="email">Email</label>
       <input id="email" type="email" inputmode="email" autocomplete="email" required placeholder="you@example.com">
+      <div id="captcha"></div>
       <div class="row"><button id="send" type="submit">寄驗證碼 Send code</button></div>
     </form>
 
@@ -100,11 +104,62 @@
   </section>
 </main>
 <script>
+// 防點擊劫持：GitHub Pages 不能設 frame-ancestors／X-Frame-Options（meta 的 CSP 也不支援），被別的網站嵌進框架時整頁不顯示
+if (window.top !== window.self) { document.documentElement.hidden = true; throw new Error("framed"); }
 // 和遊戲用同一個 Supabase 專案（公開金鑰，本來就在遊戲裡）。
 const API = "https://amzzgglrbssgeuoilcdg.supabase.co";
 const KEY = "sb_publishable_Zv9Zhroq5aauXwyD7JBLYw_baDFx9fQ";
 const $ = (id) => document.getElementById(id);
 let email = "", token = "";
+
+// Cloudflare Turnstile（CAPTCHA）：site key 由 build/build.js 從 config/channels.json 的 cloud.captchaSiteKey 填入。
+// 空字串＝不用 CAPTCHA：不載入外部腳本，寄驗證碼也不帶 token。有 key 時點進 Email 欄位才載入 api.js。
+const CAPTCHA_KEY = "";
+let captchaLoading = null;
+function captchaLoad() {
+  if (window.turnstile) return Promise.resolve(window.turnstile);
+  return captchaLoading || (captchaLoading = new Promise((ok, no) => {
+    const s = document.createElement("script");
+    const fail = (why) => { clearTimeout(timer); s.remove(); captchaLoading = null; no(new Error(why)); };
+    const timer = setTimeout(() => fail("timeout"), 15000);
+    s.src = "https://challenges.cloudflare.com/turnstile/v0/api.js?render=explicit";
+    s.async = true;
+    s.onload = () => { clearTimeout(timer); window.turnstile ? ok(window.turnstile) : fail("load"); };
+    s.onerror = () => fail("load");
+    document.head.appendChild(s);
+  }));
+}
+// 每次寄信新開一個驗證框（token 只能用一次），拿到 token 就拆掉；平常看不到，需要點一下時才出現
+async function captchaToken() {
+  const ts = await captchaLoad();
+  return new Promise((ok, no) => {
+    const box = document.createElement("div");
+    $("captcha").appendChild(box);
+    let id = null, done = false;
+    const end = (err, tok) => {
+      if (done) return;
+      done = true; clearTimeout(timer);
+      try { if (id != null) ts.remove(id); } catch (e) {}
+      box.remove();
+      err ? no(new Error(err)) : ok(tok);
+    };
+    const timer = setTimeout(() => end("timeout"), 60000);
+    try {
+      id = ts.render(box, {
+        sitekey: CAPTCHA_KEY, theme: "dark", appearance: "interaction-only",
+        callback: (tok) => end(null, tok),
+        "error-callback": () => { end("error"); return true; },
+        "expired-callback": () => end("timeout"),
+        "timeout-callback": () => end("timeout"),
+        "unsupported-callback": () => end("error"),
+      });
+      if (done && id != null) try { ts.remove(id); } catch (e) {}
+    } catch (e) { end("error"); }
+  });
+}
+const CAPTCHA_FAIL = "人機驗證沒有通過，請再試一次。The human verification didn't go through. Please try again.";
+const CAPTCHA_TIMEOUT = "人機驗證等太久了，請檢查網路後再試一次。The human verification timed out. Check your connection and try again.";
+if (CAPTCHA_KEY) $("email").addEventListener("focus", () => captchaLoad().catch(() => {}), { once: true });
 
 function say(text, kind) { $("msg").textContent = text; $("msg").className = "msg" + (kind ? " " + kind : ""); }
 function step(name) {
@@ -129,9 +184,15 @@ $("f-email").addEventListener("submit", async (e) => {
   if (!email) return;
   busy($("send"), true); say("寄送中… Sending…");
   // create_user:false：沒有這個帳號就不會新建，也不寄信
-  const r = await call("/auth/v1/otp", { email, create_user: false });
+  const body = { email, create_user: false };
+  if (CAPTCHA_KEY) {
+    try { body.gotrue_meta_security = { captcha_token: await captchaToken() }; }
+    catch (err) { busy($("send"), false); return say(err.message === "timeout" ? CAPTCHA_TIMEOUT : CAPTCHA_FAIL, "bad"); }
+  }
+  const r = await call("/auth/v1/otp", body);
   busy($("send"), false);
   if (r.status === 0) return say("連不上伺服器，請稍後再試。Can't reach the server. Please try again later.", "bad");
+  if (r.status === 400 && r.json && /captcha/i.test(String(r.json.error_code || r.json.msg || ""))) return say(CAPTCHA_FAIL, "bad");
   if (r.status === 429) return say("寄得太頻繁了，請過一分鐘再試。Too many requests. Please wait a minute and try again.", "bad");
   // 不論有沒有這個帳號都顯示同一句，避免別人拿來查 Email 有沒有註冊
   step("code"); $("code").value = ""; $("code").focus();
@@ -152,7 +213,11 @@ $("f-code").addEventListener("submit", async (e) => {
   step("confirm"); say("");
 });
 
-$("restart").addEventListener("click", () => { token = ""; step("email"); say(""); $("email").focus(); });
+$("restart").addEventListener("click", async () => {
+  // 換一個 Email 重來：先讓目前這組登入失效，不留下還能用的 token
+  if (token) await call("/auth/v1/logout", {}, token);
+  token = ""; step("email"); say(""); $("email").focus();
+});
 $("cancel").addEventListener("click", async () => {
   if (token) await call("/auth/v1/logout", {}, token);
   token = ""; step("email"); say("已取消，帳號沒有被刪除。Cancelled. Your account was not deleted.");
